@@ -76,7 +76,6 @@ int main()
     {
         DWORD error = GetLastError();
         char error_msg[256];
-        wsprintf(error_msg, "Failed to create process. Error: %d\n", error);
         WriteFile(GetStdHandle(STD_ERROR_HANDLE), error_msg, lstrlen(error_msg), &bytes_written, NULL);
         CloseHandle(pipe_read);
         CloseHandle(pipe_write);

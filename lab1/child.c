@@ -147,7 +147,6 @@ int main(int argc, char *argv[])
     {
         DWORD error = GetLastError();
         char error_msg[256];
-        wsprintf(error_msg, "Failed to create file '%s'. Error: %d\n", file_path, error);
         WriteFile(GetStdHandle(STD_ERROR_HANDLE), error_msg, lstrlen(error_msg), &bytes_written, NULL);
         return 1;
     }
