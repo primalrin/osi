@@ -1,0 +1,117 @@
+Loaded DLL at 00007FF8B8110000 C:\Windows\SYSTEM32\ntdll.dll
+NtQueryPerformanceCounter(Counter=0xd3199ff890 [6.14376e+12], Freq=null) => 0
+NtQuerySystemInformation(SystemInformationClass=0 [SystemBasicInformation], SystemInformation=0xd3199ff840, Length=0x40, ReturnLength=null) => 0
+NtQueryInformationProcess(ProcessHandle=-1, ProcessInformationClass=0x24 [ProcessCookie], ProcessInformation=0xd3199ff568, Length=4, ReturnLength=null) => 0
+NtQuerySystemInformation(SystemInformationClass=0xc0 [SystemFlushInformation], SystemInformation=0xd3199ff440, Length=0x20, ReturnLength=null) => 0
+NtQueryVirtualMemory(ProcessHandle=-1, BaseAddress=0x7ff8b8110000, MemoryInformationClass=6 [MemoryImageInformation], MemoryInformation=0xd3199ff350, Length=0x18, ReturnLength=null) => 0
+NtQueryVirtualMemory(ProcessHandle=-1, BaseAddress=null, MemoryInformationClass=4 [MemoryWorkingSetExInformation], MemoryInformation=0xd3199ff410, Length=0x50, ReturnLength=null) => 0
+NtQueryValueKey(KeyHandle=0xc, ValueName="RaiseExceptionOnPossibleDeadlock", KeyValueInformationClass=2 [KeyValuePartialInformation], KeyValueInformation=0xd3199fe0b0, Length=0x50, ResultLength=0xd3199fe0a8) => 0xc0000034 [2 'Не удается найти указанный файл.']
+NtClose(Handle=0xc) => 0
+NtQueryInformationProcess(ProcessHandle=-1, ProcessInformationClass=0x24 [ProcessCookie], ProcessInformation=0x7ff8b827d230, Length=4, ReturnLength=null) => 0
+NtQueryInformationProcess(ProcessHandle=-1, ProcessInformationClass=0x24 [ProcessCookie], ProcessInformation=0xd3199ff3f8, Length=4, ReturnLength=null) => 0
+NtQuerySecurityAttributesToken(TokenHandle=-4, Attributes="WIN://SYSAPPID", NumberOfAttributes=2, Buffer=0xd3199fee30, Length=0x330, ReturnLength=0xd3199fede8) => 0xc0000225 [1168 'Элемент не найден.']
+NtQuerySecurityAttributesToken(TokenHandle=-4, Attributes="WIN://SYSAPPID", NumberOfAttributes=1, Buffer=0xd3199fee30, Length=0x330, ReturnLength=0xd3199fede8) => 0xc0000225 [1168 'Элемент не найден.']
+NtQueryValueKey(KeyHandle=0x14, ValueName="ResourcePolicies", KeyValueInformationClass=2 [KeyValuePartialInformation], KeyValueInformation=0xd3199ff3b0, Length=0x18, ResultLength=0xd3199ff378) => 0xc0000034 [2 'Не удается найти указанный файл.']
+NtClose(Handle=0x14) => 0
+NtQueryInformationProcess(ProcessHandle=-1, ProcessInformationClass=0x24 [ProcessCookie], ProcessInformation=0xd3199ff450, Length=4, ReturnLength=null) => 0
+NtQuerySystemInformation(SystemInformationClass=0 [SystemBasicInformation], SystemInformation=0xd3199ff3f0, Length=0x40, ReturnLength=null) => 0
+NtQuerySystemInformation(SystemInformationClass=0x3e [SystemEmulationBasicInformation], SystemInformation=0xd3199ff420, Length=0x40, ReturnLength=null) => 0
+NtAllocateVirtualMemoryEx(ProcessHandle=-1, lpAddress=0x7ff8b827dc38 [0x00007ff5779f0000], ZeroBits=0x000000d3199ff3a0, pSize=0x102000 [0], flAllocationType=4, DataBuffer=0xd3199ff308, DataCount=1) => 0
+NtAllocateVirtualMemoryEx(ProcessHandle=-1, lpAddress=0x7ff8b827dc30 [0x00007ff5799f0000], ZeroBits=0x000000d3199ff3a8, pSize=0x1000 [0], flAllocationType=4, DataBuffer=null, DataCount=0) => 0
+NtAllocateVirtualMemoryEx(ProcessHandle=-1, lpAddress=0x7ff8b827dca0 [0x00007ff4779d0000], ZeroBits=0x000000d3199ff350, pSize=0x102000 [0], flAllocationType=4, DataBuffer=0xd3199ff2b8, DataCount=1) => 0
+NtQuerySystemInformation(SystemInformationClass=0 [SystemBasicInformation], SystemInformation=0xd3199ff290, Length=0x40, ReturnLength=null) => 0
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199fee50 [0x000001e709e50000], ZeroBits=0, pSize=0xd3199fee58 [0x00120000], flAllocationType=0x2000, flProtect=4) => 0
+NtFreeVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199fee50 [0x000001e709e50000], pSize=0xd3199fee48 [0x00020000], flFreeType=0x8000) => 0
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199fee38 [0x000001e709e70000], ZeroBits=0, pSize=0xd3199fee30 [0x2000], flAllocationType=0x1000, flProtect=4) => 0
+NtQuerySystemInformation(SystemInformationClass=0xc5 [SystemHypervisorSharedPageInformation], SystemInformation=0xd3199ff5f8, Length=8, ReturnLength=null) => 0
+NtQuerySystemInformation(SystemInformationClass=0x37 [SystemNumaProcessorMap], SystemInformation=0xd3199ff060, Length=0x408, ReturnLength=0xd3199ff480 [0x18]) => 0
+NtQuerySystemInformationEx(SystemInformationClass=0x6b [SystemLogicalProcessorAndGroupInformation], QueryType=0xd3199feff0 [1], Alignment=4, SystemInformation=0x1e709e70ed0, Length=0x50, ReturnLength=0xd3199fefe8 [0x30]) => 0
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199feca0 [0x000001e709e72000], ZeroBits=0, pSize=0xd3199fed48 [0x2000], flAllocationType=0x1000, flProtect=4) => 0
+NtFreeVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199ff480 [0x000001e709df0000], pSize=0xd3199ff488 [0x00020000], flFreeType=0x8000) => 0
+NtQuerySymbolicLinkObject(LinkHandle=0x40, LinkTarget="C:\Windows\System32", ReturnedLength=0xd3199ff56c [0x28]) => 0
+NtClose(Handle=0x40) => 0
+NtQueryVolumeInformationFile(FileHandle=0x40, IoStatusBlock=0xd3199ff3d8 [0/8], FsInformation=0xd3199ff3c0, Length=8, FsInformationClass=4 [FsDeviceInformation]) => 0
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199fe8d0 [0x000001e709e74000], ZeroBits=0, pSize=0xd3199fe978 [0x1000], flAllocationType=0x1000, flProtect=4) => 0
+Loaded DLL at 00007FF8B6FE0000 C:\Windows\System32\KERNEL32.DLL
+NtQueryPerformanceCounter(Counter=0xd3199fef70 [6.14376e+12], Freq=null) => 0
+Loaded DLL at 00007FF8B5E30000 C:\Windows\System32\KERNELBASE.dll
+NtQueryPerformanceCounter(Counter=0xd3199fe8e0 [6.14376e+12], Freq=null) => 0
+NtClose(Handle=0x5c) => 0
+NtClose(Handle=0x58) => 0
+NtQuerySystemInformation(SystemInformationClass=0x32 [SystemRangeStartInformation], SystemInformation=0xd3199fec40, Length=8, ReturnLength=null) => 0
+NtQuerySystemInformation(SystemInformationClass=0 [SystemBasicInformation], SystemInformation=0x7ff8b60eee60, Length=0x40, ReturnLength=null) => 0
+NtClose(Handle=0x64) => 0
+NtClose(Handle=0x60) => 0
+NtQueryVirtualMemory(ProcessHandle=-1, BaseAddress=0x1e709df0000, MemoryInformationClass=0 [MemoryBasicInformation], MemoryInformation=0xd3199fe6f0, Length=0x30, ReturnLength=null) => 0
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199fe400 [0x000001e709e75000], ZeroBits=0, pSize=0xd3199fe4a8 [0x1000], flAllocationType=0x1000, flProtect=4) => 0
+NtQueryInformationToken(TokenHandle=0x6c, TokenInformationClass=0xc [TokenSessionId], TokenInformation=0xd3199fe400, Length=4, ReturnLength=0xd3199fe3e0 [4]) => 0
+NtQueryInformationToken(TokenHandle=0x6c, TokenInformationClass=0x1d [TokenIsAppContainer], TokenInformation=0xd3199fe448, Length=4, ReturnLength=0xd3199fe3e0 [4]) => 0
+NtQueryInformationToken(TokenHandle=0x6c, TokenInformationClass=0x2a [TokenPrivateNameSpace], TokenInformation=0xd3199fe3e4, Length=4, ReturnLength=0xd3199fe3e0 [4]) => 0
+NtQueryInformationToken(TokenHandle=0x6c, TokenInformationClass=0x2c [TokenBnoIsolation], TokenInformation=0xd3199fe700, Length=0x120, ReturnLength=0xd3199fe3e0 [0x10]) => 0
+NtClose(Handle=0x6c) => 0
+NtQueryWnfStateData(StateName=0xd3199feb90 [0xa3bc0875], TypeId=0xd3199fec38, ExplicitScope=null, ChangeStamp=0xd3199feb84 [7], Buffer=0xd3199fdb80, BufferSize=0xd3199feb80 [8]) => 0
+NtQueryWnfStateData(StateName=0xd3199fecd0 [0xa3bc7c75], TypeId=null, ExplicitScope=null, ChangeStamp=0xd3199fecc8 [0], Buffer=null, BufferSize=0xd3199feccc [0]) => 0
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199fe320 [0x000001e709e76000], ZeroBits=0, pSize=0xd3199fe3c8 [0x1000], flAllocationType=0x1000, flProtect=4) => 0
+NtQueryWnfStateData(StateName=0xd3199fecd0 [0xa3bc88f5], TypeId=null, ExplicitScope=null, ChangeStamp=0xd3199fecc8 [0], Buffer=null, BufferSize=0xd3199feccc [0]) => 0
+NtQuerySystemInformationEx(SystemInformationClass=0xd3 [SystemFeatureConfigurationSectionInformation], QueryType=0xd3199fea80 [0], Alignment=0x18, SystemInformation=0xd3199feaa0, Length=0x50, ReturnLength=null) => 0
+NtClose(Handle=0x84) => 0
+NtClose(Handle=0x88) => 0
+NtClose(Handle=0x8c) => 0
+NtQueryWnfStateData(StateName=0xd3199fea88 [0xa3bc7c75], TypeId=null, ExplicitScope=null, ChangeStamp=0xd3199feb18 [0], Buffer=0xd3199feb70, BufferSize=0xd3199fea70 [0]) => 0
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199fe460 [0x000001e709e77000], ZeroBits=0, pSize=0xd3199fe508 [0x1000], flAllocationType=0x1000, flProtect=4) => 0
+NtQueryValueKey(KeyHandle=0x94, ValueName="TSAppCompat", KeyValueInformationClass=2 [KeyValuePartialInformation], KeyValueInformation=0x1e709e76d90, Length=0x224, ResultLength=0xd3199feca8) => 0xc0000034 [2 'Не удается найти указанный файл.']
+NtQueryValueKey(KeyHandle=0x94, ValueName="TSUserEnabled", KeyValueInformationClass=2 [KeyValuePartialInformation], KeyValueInformation=0x1e709e76d90, Length=0x224, ResultLength=0xd3199feca8 [0x10]) => 0
+NtClose(Handle=0x94) => 0
+NtQuerySystemInformation(SystemInformationClass=0 [SystemBasicInformation], SystemInformation=0x7ff8b7097aa0, Length=0x40, ReturnLength=null) => 0
+NtQueryValueKey(KeyHandle=0x98, ValueName="TransparentEnabled", KeyValueInformationClass=2 [KeyValuePartialInformation], KeyValueInformation=0xd3199ff3b0, Length=0x50, ResultLength=0xd3199ff2f0) => 0xc0000034 [2 'Не удается найти указанный файл.']
+NtClose(Handle=0x98) => 0
+NtQueryInformationToken(TokenHandle=-6, TokenInformationClass=1 [TokenUser], TokenInformation=0xd3199ff240, Length=0x58, ReturnLength=0xd3199ff238 [0x2c]) => 0
+NtQueryValueKey(KeyHandle=0x98, ValueName="LongPathsEnabled", KeyValueInformationClass=2 [KeyValuePartialInformation], KeyValueInformation=0xd3199ff420, Length=0x14, ResultLength=0xd3199ff3e8 [0x10]) => 0
+NtClose(Handle=0x98) => 0
+NtQueryValueKey(KeyHandle=0x9c, ValueName="LPGO", KeyValueInformationClass=2 [KeyValuePartialInformation], KeyValueInformation=0xd3199ff420, Length=0x14, ResultLength=0xd3199ff3e8) => 0xc0000034 [2 'Не удается найти указанный файл.']
+NtClose(Handle=0x9c) => 0
+NtQuerySystemInformationEx(SystemInformationClass=0x6b [SystemLogicalProcessorAndGroupInformation], QueryType=0xd3199ff340 [1], Alignment=4, SystemInformation=0x1e709e74480, Length=0x50, ReturnLength=0xd3199ff338 [0x30]) => 0
+NtQuerySecurityAttributesToken(TokenHandle=-4, Attributes="WIN://SYSAPPID", NumberOfAttributes=2, Buffer=0xd3199fee90, Length=0x330, ReturnLength=0xd3199fee48) => 0xc0000225 [1168 'Элемент не найден.']
+NtQuerySecurityAttributesToken(TokenHandle=-4, Attributes="WIN://SYSAPPID", NumberOfAttributes=1, Buffer=0xd3199fee90, Length=0x330, ReturnLength=0xd3199fee48) => 0xc0000225 [1168 'Элемент не найден.']
+Loaded DLL at 00007FF8B6250000 C:\Windows\System32\msvcrt.dll
+NtQueryPerformanceCounter(Counter=0xd3199fed20 [6.14376e+12], Freq=null) => 0
+NtClose(Handle=0xb0) => 0
+NtQueryInformationThread(ThreadHandle=-2, ThreadInformationClass=0x11 [ThreadHideFromDebugger], ThreadInformation=0xd3199ff480, Length=1, ReturnLength=null) => 0
+NtQueryInformationToken(TokenHandle=0xb0, TokenInformationClass=0xa [TokenStatistics], TokenInformation=0xd3199ff3d0, Length=0x38, ReturnLength=0xd3199ff3c8 [0x38]) => 0
+NtClose(Handle=0xb0) => 0
+NtQueryLicenseValue(Name="TerminalServices-RemoteConnectionManager-AllowAppServerMode", Type=0xd3199ff2a0 [4], Buffer=0xd3199ff290, Length=4, ReturnedLength=0xd3199ff2a8 [4]) => 0
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199feb70 [0x000001e70a040000], ZeroBits=0, pSize=0xd3199feb78 [0x00170000], flAllocationType=0x2000, flProtect=4) => 0
+NtFreeVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199feb70 [0x000001e70a040000], pSize=0xd3199feb68 [0x00160000], flFreeType=0x8000) => 0
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199feb58 [0x000001e70a1a0000], ZeroBits=0, pSize=0xd3199feb50 [0x2000], flAllocationType=0x1000, flProtect=4) => 0
+NtQueryVolumeInformationFile(FileHandle=0x50, IoStatusBlock=0xd3199ff140 [0/8], FsInformation=0xd3199ff160, Length=8, FsInformationClass=4 [FsDeviceInformation]) => 0
+NtQueryVolumeInformationFile(FileHandle=0xfb0, IoStatusBlock=0xd3199ff140 [0/8], FsInformation=0xd3199ff160, Length=8, FsInformationClass=4 [FsDeviceInformation]) => 0
+NtQueryVolumeInformationFile(FileHandle=0x48, IoStatusBlock=0xd3199ff140 [0/8], FsInformation=0xd3199ff160, Length=8, FsInformationClass=4 [FsDeviceInformation]) => 0
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199fe9e0 [0x000001e709e78000], ZeroBits=0, pSize=0xd3199fea88 [0x2000], flAllocationType=0x1000, flProtect=4) => 0
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199fe9b0 [0x000001e70a1a2000], ZeroBits=0, pSize=0xd3199fea58 [0x1000], flAllocationType=0x1000, flProtect=4) => 0
+NtQueryValueKey(KeyHandle=0xb4, ValueName="", KeyValueInformationClass=1 [KeyValueFullInformation], KeyValueInformation=0xd3199fe2e0, Length=0x214, ResultLength=0xd3199fe298 [0x2a]) => 0
+NtQueryValueKey(KeyHandle=0xb4, ValueName="000603xx", KeyValueInformationClass=1 [KeyValueFullInformation], KeyValueInformation=0xd3199fe2c0, Length=0x214, ResultLength=0xd3199fe078 [0x42]) => 0
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199fe9b0 [0x000001e70a1a3000], ZeroBits=0, pSize=0xd3199fea58 [0x1000], flAllocationType=0x1000, flProtect=4) => 0
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199fe990 [0x000001e70a1a4000], ZeroBits=0, pSize=0xd3199fea38 [0x2000], flAllocationType=0x1000, flProtect=4) => 0
+NtQueryVirtualMemory(ProcessHandle=-1, BaseAddress=0x7ff8b62d6998, MemoryInformationClass=6 [MemoryImageInformation], MemoryInformation=0xd3199fef30, Length=0x18, ReturnLength=null) => 0
+NtQueryVirtualMemory(ProcessHandle=-1, BaseAddress=0x7ff75e5b23f0, MemoryInformationClass=0 [MemoryBasicInformation], MemoryInformation=0xd3199ffab0, Length=0x30, ReturnLength=0xd3199ffa60 [0x30]) => 0
+NtQueryVirtualMemory(ProcessHandle=-1, BaseAddress=0x7ff75e5b23f0, MemoryInformationClass=3 [MemoryRegionInformation], MemoryInformation=0xd3199ffae0, Length=0x30, ReturnLength=null) => 0
+NtQueryVirtualMemory(ProcessHandle=-1, BaseAddress=0x7ff75e5b23f0, MemoryInformationClass=2 [MemoryMappedFilenameInformation], MemoryInformation=0xd3199ffb58, Length=0x21a, ReturnLength=null) => 0
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199d8bb0 [0x000001e70a040000], ZeroBits=0, pSize=0xd3199d8bb8 [0x00100000], flAllocationType=0x3000, flProtect=4) => 0
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199d8bb0 [0], ZeroBits=0, pSize=0xd3199d8bb8 [0x000001e70a040000], flAllocationType=0x3000, flProtect=4) => 0xc000012d [1455 'Файл подкачки слишком мал для завершения операции.']
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199d8bb0 [0], ZeroBits=0, pSize=0xd3199d8bb8 [0], flAllocationType=0x3000, flProtect=4) => 0xc000000d [87 'Параметр задан неверно.']
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199d8bb0 [0], ZeroBits=0, pSize=0xd3199d8bb8 [0], flAllocationType=0x3000, flProtect=4) => 0xc000000d [87 'Параметр задан неверно.']
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199d8bb0 [0], ZeroBits=0, pSize=0xd3199d8bb8 [0], flAllocationType=0x3000, flProtect=4) => 0xc000000d [87 'Параметр задан неверно.']
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199d8bb0 [0], ZeroBits=0, pSize=0xd3199d8bb8 [0], flAllocationType=0x3000, flProtect=4) => 0xc000000d [87 'Параметр задан неверно.']
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199d8bb0 [0], ZeroBits=0, pSize=0xd3199d8bb8 [0], flAllocationType=0x3000, flProtect=4) => 0xc000000d [87 'Параметр задан неверно.']
+...
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199d8bb0 [0], ZeroBits=0, pSize=0xd3199d8bb8 [0], flAllocationType=0x3000, flProtect=4) => 0xc000000d [87 'Параметр задан неверно.']
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199d8bb0 [0], ZeroBits=0, pSize=0xd3199d8bb8 [0], flAllocationType=0x3000, flProtect=4) => 0xc000000d [87 'Параметр задан неверно.']
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199d8bb0 [0], ZeroBits=0, pSize=0xd3199d8bb8 [0], flAllocationType=0x3000, flProtect=4) => 0xc000000d [87 'Параметр задан неверно.']
+NtAllocateVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199d8bb0 [0], ZeroBits=0, pSize=0xd3199d8bb8 [0], flAllocationType=0x3000, flProtect=4) => 0xc000000d [87 'Параметр задан неверно.']
+NtFreeVirtualMemory(ProcessHandle=-1, lpAddress=0xd3199d8bb8 [0x000001e70a040000], pSize=0xd3199d8bb0 [0x00100000], flFreeType=0x8000) => 0
+NtClose(Handle=0x94) => 0
+NtClose(Handle=0x60) => 0
+NtClose(Handle=0x8c) => 0
+NtClose(Handle=0x90) => 0
+NtQueryWnfStateData(StateName=0xd3199ff830 [0xa3bc1c75], TypeId=null, ExplicitScope=null, ChangeStamp=0xd3199fe774 [0x0001b63c], Buffer=0xd3199fe7d0, BufferSize=0xd3199fe770 [0xcc2]) => 0
+NtQueryWnfStateData(StateName=0xd3199ff6b8 [0xa3bc7c75], TypeId=null, ExplicitScope=null, ChangeStamp=0xd3199ff748 [0], Buffer=0xd3199ff7a0, BufferSize=0xd3199ff6a0 [0]) => 0
