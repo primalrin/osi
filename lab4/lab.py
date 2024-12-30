@@ -1,6 +1,6 @@
 def filter_lines(input_filename="input.txt", output_filename="output.txt", encoding='utf-16-le'):
 
-    prefixes = ["NtAllocate", "NtFree", "Loaded", "NtQuery", "NtClose"]
+    prefixes = ["Loaded", "NtAllocateVirtualMemory", "NtFreeVirtualMemory", "NtCreateSection", "NtMapViewOfSection", "NtUnmapViewOfSection"]
 
     try:
         with open(input_filename, 'r', encoding=encoding) as infile, open(output_filename, 'w') as outfile:
