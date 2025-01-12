@@ -1,97 +1,197 @@
 #include "allocator.h"
 #include <stddef.h>
-#include <math.h>
 #include <stdint.h>
+#include <limits.h>
 
-#define BLOCK_SIZE 16
+#define PAGE_SIZE 4096
+#define MAX_ORDER 12
+
+typedef struct Page
+{
+    union
+    {
+        struct Page *next_free;
+        size_t block_size;
+    };
+} Page;
+
+typedef struct FreeBlock
+{
+    struct FreeBlock *next;
+} FreeBlock;
 
 struct Allocator
 {
-    void *memory;
-    size_t size;
-    size_t max_order;
-    uint8_t *free_blocks;
+    size_t num_pages;
+    Page *pages;
+    FreeBlock *free_lists[MAX_ORDER + 1];
+    Page *free_pages;
 };
 
-size_t get_order(size_t size)
+static size_t align_up(size_t size, size_t alignment)
 {
-    return (size_t)ceil(log2(size));
+    return (size + alignment - 1) & ~(alignment - 1);
 }
 
-Allocator *allocator_create(void *memory, size_t size)
+static int get_order(size_t size)
 {
-    Allocator *allocator = (Allocator *)memory;
-    allocator->memory = (uint8_t *)memory + sizeof(Allocator);
-    allocator->size = size - sizeof(Allocator);
-    allocator->max_order = (size_t)log2(allocator->size);
-    size_t bitmap_size = (size / BLOCK_SIZE) / 8;
-    if ((size / BLOCK_SIZE) % 8 != 0)
+    for (int order = 0; order <= MAX_ORDER; ++order)
     {
-        bitmap_size++;
+        if ((1UL << order) >= size)
+        {
+            return order;
+        }
+    }
+    return -1;
+}
+
+Allocator *allocator_create(void *const memory, const size_t size)
+{
+    if (size < sizeof(Allocator))
+        return NULL;
+    Allocator *allocator = (Allocator *)memory;
+    allocator->num_pages = size / PAGE_SIZE;
+    allocator->pages = (Page *)((char *)memory + sizeof(Allocator));
+    allocator->free_pages = NULL;
+
+    for (size_t i = 0; i < allocator->num_pages; ++i)
+    {
+        allocator->pages[i].next_free = allocator->free_pages;
+        allocator->free_pages = &allocator->pages[i];
     }
 
-    allocator->free_blocks = (uint8_t *)allocator->memory + allocator->size - bitmap_size;
-    for (size_t i = 0; i < bitmap_size; i++)
+    for (int i = 0; i <= MAX_ORDER; ++i)
     {
-        allocator->free_blocks[i] = 0xFF;
+        allocator->free_lists[i] = NULL;
     }
 
     return allocator;
 }
 
-void allocator_destroy(Allocator *allocator)
+void allocator_destroy(Allocator *const allocator)
 {
 }
 
-void *allocator_alloc(Allocator *allocator, size_t size)
+void *allocator_alloc(Allocator *const allocator, const size_t size)
 {
-    size_t num_blocks = (size + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    if (size == 0 || size > (1UL << MAX_ORDER))
+        return NULL;
 
-    size_t total_blocks = allocator->size / BLOCK_SIZE;
+    size_t aligned_size = align_up(size, sizeof(void *));
+    int order = get_order(aligned_size);
+    if (order == -1)
+        return NULL;
 
-    for (size_t i = 0; i <= total_blocks - num_blocks; i++)
+    if (allocator->free_lists[order] != NULL)
     {
-        int found = 1;
-        for (size_t j = 0; j < num_blocks; j++)
-        {
-            size_t byte_index = (i + j) / 8;
-            size_t bit_index = (i + j) % 8;
-            if (!(allocator->free_blocks[byte_index] & (1 << bit_index)))
-            {
-                found = 0;
-                break;
-            }
-        }
+        FreeBlock *block = allocator->free_lists[order];
+        allocator->free_lists[order] = block->next;
+        return block;
+    }
 
-        if (found)
+    if (allocator->free_pages == NULL)
+    {
+        return NULL;
+    }
+
+    Page *free_page = allocator->free_pages;
+    allocator->free_pages = free_page->next_free;
+
+    size_t block_size = 1UL << order;
+    free_page->block_size = block_size;
+    size_t num_blocks = PAGE_SIZE / block_size;
+    char *page_start = (char *)free_page;
+
+    for (size_t i = 0; i < num_blocks; ++i)
+    {
+        FreeBlock *block = (FreeBlock *)(page_start + i * block_size);
+        if (i == 0)
         {
-            for (size_t j = 0; j < num_blocks; j++)
-            {
-                size_t byte_index = (i + j) / 8;
-                size_t bit_index = (i + j) % 8;
-                allocator->free_blocks[byte_index] &= ~(1 << bit_index);
-            }
-            return (uint8_t *)allocator->memory + i * BLOCK_SIZE;
+            allocator->free_lists[order] = block;
+        }
+        if (i < num_blocks - 1)
+        {
+            block->next = (FreeBlock *)(page_start + (i + 1) * block_size);
+        }
+        else
+        {
+            block->next = NULL;
         }
     }
 
-    return NULL;
+    FreeBlock *block = allocator->free_lists[order];
+    allocator->free_lists[order] = block->next;
+    return block;
 }
 
-void allocator_free(Allocator *allocator, void *memory)
+void allocator_free(Allocator *const allocator, void *const memory)
 {
     if (memory == NULL)
+        return;
+    Page *page = NULL;
+    for (size_t i = 0; i < allocator->num_pages; ++i)
+    {
+        char *page_start = (char *)&allocator->pages[i];
+        char *page_end = page_start + PAGE_SIZE;
+        if (memory >= (void *)page_start && memory < (void *)page_end)
+        {
+            page = &allocator->pages[i];
+            break;
+        }
+    }
+
+    if (page == NULL || page->block_size == 0)
     {
         return;
     }
-    size_t offset = (uint8_t *)memory - (uint8_t *)allocator->memory;
-    size_t index = offset / BLOCK_SIZE;
 
-    if (index < (allocator->size / BLOCK_SIZE))
+    int order = get_order(page->block_size);
+    if (order == -1)
+        return;
+    FreeBlock *block_to_free = (FreeBlock *)memory;
+    block_to_free->next = allocator->free_lists[order];
+    allocator->free_lists[order] = block_to_free;
+
+    size_t block_size = 1UL << order;
+    size_t num_blocks = PAGE_SIZE / block_size;
+    char *page_start = (char *)page;
+    int is_page_free = 1;
+    for (size_t i = 0; i < num_blocks; ++i)
     {
-        size_t byte_index = index / 8;
-        size_t bit_index = index % 8;
+        FreeBlock *block = allocator->free_lists[order];
+        while (block != NULL)
+        {
+            if ((void *)block == (void *)(page_start + i * block_size))
+            {
+                break;
+            }
+            block = block->next;
+        }
+        if (block == NULL)
+        {
+            is_page_free = 0;
+            break;
+        }
+    }
 
-        allocator->free_blocks[byte_index] |= (1 << bit_index);
+    if (is_page_free)
+    {
+
+        FreeBlock **head = &allocator->free_lists[order];
+        while (*head != NULL)
+        {
+            if (*head >= (FreeBlock *)page_start && *head < (FreeBlock *)(page_start + PAGE_SIZE))
+            {
+                *head = (*head)->next;
+            }
+            else
+            {
+                head = &(*head)->next;
+            }
+        }
+
+        page->next_free = allocator->free_pages;
+        allocator->free_pages = page;
+        page->block_size = 0;
     }
 }

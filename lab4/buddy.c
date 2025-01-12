@@ -1,63 +1,83 @@
 #include "allocator.h"
 #include <stddef.h>
-#include <math.h>
 #include <windows.h>
 
-#define MIN_ORDER 4
-#define ALIGNMENT 8
+#define MIN_ORDER 3
+#define MAX_ORDER 20
 
-typedef struct FreeBlock
+typedef struct Block
 {
-    struct FreeBlock *next;
-} FreeBlock;
+    unsigned char order;
+    unsigned char is_free;
+    struct Block *next;
+    struct Block *prev;
+} Block;
 
 struct Allocator
 {
     void *memory;
     size_t size;
-    int max_order;
-    FreeBlock **free_lists;
+    Block *free_lists[MAX_ORDER - MIN_ORDER + 1];
 };
-
-static void *sys_alloc(size_t size)
-{
-    return VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-}
-
-static void sys_free(void *ptr, size_t size)
-{
-    VirtualFree(ptr, 0, MEM_RELEASE);
-}
 
 static size_t align(size_t size)
 {
-    return (size + ALIGNMENT - 1) & ~(ALIGNMENT - 1);
+    return (size + sizeof(void *) - 1) & ~(sizeof(void *) - 1);
+}
+
+static size_t get_block_size(int order)
+{
+    return 1 << order;
 }
 
 static int get_order(size_t size)
 {
     int order = MIN_ORDER;
-    size_t block_size = 1 << MIN_ORDER;
+    size_t block_size = get_block_size(order);
     while (block_size < size)
     {
-        block_size <<= 1;
         order++;
+        block_size = get_block_size(order);
     }
     return order;
 }
 
-static void split_block(Allocator *allocator, int order)
+static Block *get_buddy(Allocator *allocator, Block *block)
 {
-    int higher_order = order + 1;
-    FreeBlock *block = allocator->free_lists[higher_order];
-    allocator->free_lists[higher_order] = block->next;
+    size_t block_size = get_block_size(block->order);
+    size_t offset = (char *)block - (char *)allocator->memory;
+    size_t buddy_offset = offset ^ block_size;
+    return (Block *)((char *)allocator->memory + buddy_offset);
+}
 
-    size_t block_size = 1 << order;
-    FreeBlock *buddy = (FreeBlock *)((char *)block + block_size);
+static void add_to_free_list(Allocator *allocator, Block *block)
+{
+    int order = block->order;
+    block->is_free = 1;
+    block->next = allocator->free_lists[order - MIN_ORDER];
+    block->prev = NULL;
+    if (allocator->free_lists[order - MIN_ORDER] != NULL)
+    {
+        allocator->free_lists[order - MIN_ORDER]->prev = block;
+    }
+    allocator->free_lists[order - MIN_ORDER] = block;
+}
 
-    block->next = buddy;
-    buddy->next = allocator->free_lists[order];
-    allocator->free_lists[order] = block;
+static void remove_from_free_list(Allocator *allocator, Block *block)
+{
+    int order = block->order;
+    if (block->prev != NULL)
+    {
+        block->prev->next = block->next;
+    }
+    else
+    {
+        allocator->free_lists[order - MIN_ORDER] = block->next;
+    }
+    if (block->next != NULL)
+    {
+        block->next->prev = block->prev;
+    }
 }
 
 Allocator *allocator_create(void *const memory, const size_t size)
@@ -70,31 +90,29 @@ Allocator *allocator_create(void *const memory, const size_t size)
     Allocator *allocator = (Allocator *)memory;
     allocator->memory = (char *)memory + sizeof(Allocator);
     allocator->size = size - sizeof(Allocator);
-    allocator->max_order = get_order(allocator->size);
 
-    allocator->free_lists = (FreeBlock **)sys_alloc(sizeof(FreeBlock *) * (allocator->max_order + 1));
-    if (allocator->free_lists == NULL)
-    {
-        return NULL;
-    }
-
-    for (int i = 0; i <= allocator->max_order; i++)
+    for (int i = 0; i <= MAX_ORDER - MIN_ORDER; i++)
     {
         allocator->free_lists[i] = NULL;
     }
 
-    allocator->free_lists[allocator->max_order] = (FreeBlock *)allocator->memory;
-    allocator->free_lists[allocator->max_order]->next = NULL;
+    int order = MAX_ORDER;
+    size_t block_size = get_block_size(order);
+    while (block_size > allocator->size && order > MIN_ORDER)
+    {
+        order--;
+        block_size = get_block_size(order);
+    }
+
+    Block *initial_block = (Block *)allocator->memory;
+    initial_block->order = order;
+    add_to_free_list(allocator, initial_block);
 
     return allocator;
 }
 
 void allocator_destroy(Allocator *const allocator)
 {
-    if (allocator != NULL && allocator->free_lists != NULL)
-    {
-        sys_free(allocator->free_lists, sizeof(FreeBlock *) * (allocator->max_order + 1));
-    }
 }
 
 void *allocator_alloc(Allocator *const allocator, const size_t size)
@@ -104,49 +122,35 @@ void *allocator_alloc(Allocator *const allocator, const size_t size)
         return NULL;
     }
 
-    size_t alloc_size = align(size + sizeof(size_t));
+    size_t alloc_size = align(size + sizeof(Block));
     int order = get_order(alloc_size);
 
-    if (order > allocator->max_order)
+    if (order > MAX_ORDER)
     {
         return NULL;
     }
 
-    if (allocator->free_lists[order] == NULL)
+    for (int i = order; i <= MAX_ORDER; i++)
     {
-        int i = order + 1;
-        while (i <= allocator->max_order && allocator->free_lists[i] == NULL)
+        if (allocator->free_lists[i - MIN_ORDER] != NULL)
         {
-            i++;
-        }
+            Block *block = allocator->free_lists[i - MIN_ORDER];
+            remove_from_free_list(allocator, block);
 
-        if (i > allocator->max_order)
-        {
-            return NULL;
-        }
+            while (block->order > order)
+            {
+                block->order--;
+                Block *buddy = get_buddy(allocator, block);
+                buddy->order = block->order;
+                add_to_free_list(allocator, buddy);
+            }
 
-        while (i > order)
-        {
-            split_block(allocator, i - 1);
-            i--;
+            block->is_free = 0;
+            return (char *)block + sizeof(Block);
         }
     }
 
-    FreeBlock *block = allocator->free_lists[order];
-    allocator->free_lists[order] = block->next;
-
-    size_t *block_size = (size_t *)block;
-    *block_size = 1 << order;
-
-    return (char *)block + sizeof(size_t);
-}
-
-void *get_buddy(Allocator *allocator, void *block, int order)
-{
-    size_t block_size = 1 << order;
-    size_t block_offset = (char *)block - (char *)allocator->memory;
-    size_t buddy_offset = block_offset ^ block_size;
-    return (char *)allocator->memory + buddy_offset;
+    return NULL;
 }
 
 void allocator_free(Allocator *const allocator, void *const memory)
@@ -156,46 +160,28 @@ void allocator_free(Allocator *const allocator, void *const memory)
         return;
     }
 
-    size_t *block_size_ptr = (size_t *)((char *)memory - sizeof(size_t));
-    size_t block_size = *block_size_ptr;
-    int order = get_order(block_size);
-    FreeBlock *block = (FreeBlock *)((char *)memory - sizeof(size_t));
+    Block *block = (Block *)((char *)memory - sizeof(Block));
+    block->is_free = 1;
 
-    while (order < allocator->max_order)
+    while (block->order < MAX_ORDER)
     {
-        FreeBlock *buddy = (FreeBlock *)get_buddy(allocator, block, order);
-
-        FreeBlock *current = allocator->free_lists[order];
-        FreeBlock *prev = NULL;
-        while (current != NULL && current != buddy)
-        {
-            prev = current;
-            current = current->next;
-        }
-
-        if (current == NULL)
+        Block *buddy = get_buddy(allocator, block);
+        if (!buddy->is_free || buddy->order != block->order)
         {
             break;
         }
 
-        if (prev == NULL)
-        {
-            allocator->free_lists[order] = current->next;
-        }
-        else
-        {
-            prev->next = current->next;
-        }
+        remove_from_free_list(allocator, buddy);
 
-        if (buddy < block)
+        if (block > buddy)
         {
+            Block *temp = block;
             block = buddy;
+            buddy = temp;
         }
 
-        order++;
-        block_size <<= 1;
+        block->order++;
     }
 
-    block->next = allocator->free_lists[order];
-    allocator->free_lists[order] = block;
+    add_to_free_list(allocator, block);
 }

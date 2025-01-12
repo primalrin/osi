@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "math.h": "c"
+        "math.h": "c",
+        "stddef.h": "c",
+        "windows.h": "c"
     }
 }

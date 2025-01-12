@@ -92,6 +92,13 @@ int main(int argc, char *argv[])
     void *allocations[ALLOCATIONS];
     size_t allocation_sizes[ALLOCATIONS];
     size_t total_allocated = 0;
+    int allocation_indices[ALLOCATIONS];
+
+    // Initialize allocation indices
+    for (int i = 0; i < ALLOCATIONS; i++)
+    {
+        allocation_indices[i] = i;
+    }
 
     long long start_alloc = get_current_time_ns();
     for (int i = 0; i < ALLOCATIONS; i++)
@@ -110,12 +117,21 @@ int main(int argc, char *argv[])
     }
     long long end_alloc = get_current_time_ns();
 
+    for (int i = ALLOCATIONS - 1; i > 0; i--)
+    {
+        int j = rand() % (i + 1);
+        int temp = allocation_indices[i];
+        allocation_indices[i] = allocation_indices[j];
+        allocation_indices[j] = temp;
+    }
+
     long long start_free = get_current_time_ns();
     for (int i = 0; i < ALLOCATIONS; i++)
     {
-        if (allocations[i] != NULL)
+        int index = allocation_indices[i];
+        if (allocations[index] != NULL)
         {
-            free_func(allocator, allocations[i]);
+            free_func(allocator, allocations[index]);
         }
     }
     long long end_free = get_current_time_ns();
@@ -146,6 +162,5 @@ int main(int argc, char *argv[])
     {
         printf("Usage factor: N/A (no successful allocations)\n");
     }
-
     return 0;
 }
