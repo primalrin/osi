@@ -94,7 +94,6 @@ int main(int argc, char *argv[])
     size_t total_allocated = 0;
     int allocation_indices[ALLOCATIONS];
 
-    // Initialize allocation indices
     for (int i = 0; i < ALLOCATIONS; i++)
     {
         allocation_indices[i] = i;
