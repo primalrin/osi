@@ -1,0 +1,503 @@
+#include "allocator.h"
+
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <new>
+#include <vector>
+
+namespace {
+
+constexpr size_t kAlignment = alignof(std::max_align_t);
+
+size_t alignUp(size_t value, size_t alignment) {
+    return (value + alignment - 1) / alignment * alignment;
+}
+
+std::byte* alignPointer(void* memory) {
+    const auto address = reinterpret_cast<std::uintptr_t>(memory);
+    const auto aligned = alignUp(address, kAlignment);
+    return reinterpret_cast<std::byte*>(aligned);
+}
+
+struct MemoryRange {
+    std::byte* begin = nullptr;
+    size_t size = 0;
+};
+
+MemoryRange normalizeRange(void* memory, size_t memorySize) {
+    if (memory == nullptr || memorySize == 0) {
+        return {};
+    }
+
+    std::byte* alignedBegin = alignPointer(memory);
+    const auto shift = static_cast<size_t>(alignedBegin - static_cast<std::byte*>(memory));
+
+    if (shift >= memorySize) {
+        return {};
+    }
+
+    return {alignedBegin, memorySize - shift};
+}
+
+size_t floorLog2(size_t value) {
+    size_t result = 0;
+    while ((size_t(1) << (result + 1)) <= value) {
+        ++result;
+    }
+    return result;
+}
+
+size_t ceilLog2(size_t value) {
+    size_t result = 0;
+    size_t power = 1;
+    while (power < value) {
+        power <<= 1;
+        ++result;
+    }
+    return result;
+}
+
+size_t highestPowerOfTwo(size_t value) {
+    if (value == 0) {
+        return 0;
+    }
+    return size_t(1) << floorLog2(value);
+}
+
+struct FirstFitBlockHeader {
+    size_t size = 0;
+    bool isFree = true;
+    FirstFitBlockHeader* next = nullptr;
+    FirstFitBlockHeader* prev = nullptr;
+};
+
+struct FirstFitState {
+    std::byte* memoryBegin = nullptr;
+    size_t memorySize = 0;
+    FirstFitBlockHeader* head = nullptr;
+};
+
+struct BuddyBlockHeader {
+    size_t order = 0;
+    bool isFree = true;
+    BuddyBlockHeader* next = nullptr;
+    BuddyBlockHeader* prev = nullptr;
+};
+
+struct BuddyState {
+    std::byte* memoryBegin = nullptr;
+    size_t memorySize = 0;
+    size_t minOrder = 0;
+    size_t maxOrder = 0;
+    std::vector<BuddyBlockHeader*> freeLists;
+};
+
+void splitFirstFitBlock(FirstFitBlockHeader* block, size_t requestedSize) {
+    const size_t headerSize = sizeof(FirstFitBlockHeader);
+    const size_t remainder = block->size - requestedSize;
+
+    if (remainder < headerSize + kAlignment) {
+        return;
+    }
+
+    auto* nextBlock = reinterpret_cast<FirstFitBlockHeader*>(
+        reinterpret_cast<std::byte*>(block) + headerSize + requestedSize
+    );
+
+    nextBlock->size = remainder - headerSize;
+    nextBlock->isFree = true;
+    nextBlock->prev = block;
+    nextBlock->next = block->next;
+
+    if (block->next != nullptr) {
+        block->next->prev = nextBlock;
+    }
+
+    block->size = requestedSize;
+    block->next = nextBlock;
+}
+
+void mergeWithNext(FirstFitBlockHeader* block) {
+    while (block != nullptr && block->next != nullptr && block->next->isFree) {
+        FirstFitBlockHeader* nextBlock = block->next;
+        block->size += sizeof(FirstFitBlockHeader) + nextBlock->size;
+        block->next = nextBlock->next;
+
+        if (block->next != nullptr) {
+            block->next->prev = block;
+        }
+    }
+}
+
+void buddyAddFreeBlock(BuddyState* state, BuddyBlockHeader* block) {
+    const size_t order = block->order;
+    block->isFree = true;
+    block->prev = nullptr;
+    block->next = state->freeLists[order];
+
+    if (state->freeLists[order] != nullptr) {
+        state->freeLists[order]->prev = block;
+    }
+
+    state->freeLists[order] = block;
+}
+
+void buddyRemoveFreeBlock(BuddyState* state, BuddyBlockHeader* block) {
+    const size_t order = block->order;
+
+    if (block->prev != nullptr) {
+        block->prev->next = block->next;
+    } else {
+        state->freeLists[order] = block->next;
+    }
+
+    if (block->next != nullptr) {
+        block->next->prev = block->prev;
+    }
+
+    block->prev = nullptr;
+    block->next = nullptr;
+    block->isFree = false;
+}
+
+size_t buddyBlockSize(size_t order) {
+    return size_t(1) << order;
+}
+
+size_t buddyPayloadCapacity(size_t order) {
+    const size_t blockSize = buddyBlockSize(order);
+    if (blockSize <= sizeof(BuddyBlockHeader)) {
+        return 0;
+    }
+    return blockSize - sizeof(BuddyBlockHeader);
+}
+
+AllocatorStats collectFirstFitStats(const FirstFitState* state) {
+    AllocatorStats stats{};
+    stats.managed_memory = state->memorySize;
+
+    for (FirstFitBlockHeader* block = state->head; block != nullptr; block = block->next) {
+        if (block->isFree) {
+            stats.free_memory += block->size;
+            stats.largest_free_block = std::max(stats.largest_free_block, block->size);
+        } else {
+            stats.used_memory += sizeof(FirstFitBlockHeader) + block->size;
+            ++stats.allocation_count;
+        }
+    }
+
+    return stats;
+}
+
+AllocatorStats collectBuddyStats(const BuddyState* state) {
+    AllocatorStats stats{};
+    stats.managed_memory = state->memorySize;
+
+    size_t offset = 0;
+    while (offset < state->memorySize) {
+        auto* block = reinterpret_cast<BuddyBlockHeader*>(state->memoryBegin + offset);
+        const size_t size = buddyBlockSize(block->order);
+
+        if (block->isFree) {
+            const size_t payload = buddyPayloadCapacity(block->order);
+            stats.free_memory += payload;
+            stats.largest_free_block = std::max(stats.largest_free_block, payload);
+        } else {
+            stats.used_memory += size;
+            ++stats.allocation_count;
+        }
+
+        offset += size;
+    }
+
+    return stats;
+}
+
+void* allocateFirstFit(Allocator* allocator, size_t blockSize) {
+    if (allocator == nullptr || blockSize == 0) {
+        return nullptr;
+    }
+
+    auto* state = static_cast<FirstFitState*>(allocator->state);
+    const size_t requestedSize = alignUp(blockSize, kAlignment);
+
+    for (FirstFitBlockHeader* block = state->head; block != nullptr; block = block->next) {
+        if (!block->isFree || block->size < requestedSize) {
+            continue;
+        }
+
+        splitFirstFitBlock(block, requestedSize);
+        block->isFree = false;
+        return reinterpret_cast<std::byte*>(block) + sizeof(FirstFitBlockHeader);
+    }
+
+    return nullptr;
+}
+
+void freeFirstFit(Allocator* allocator, void* blockPointer) {
+    if (allocator == nullptr || blockPointer == nullptr) {
+        return;
+    }
+
+    auto* block = reinterpret_cast<FirstFitBlockHeader*>(
+        static_cast<std::byte*>(blockPointer) - sizeof(FirstFitBlockHeader)
+    );
+
+    if (block->isFree) {
+        return;
+    }
+
+    block->isFree = true;
+    mergeWithNext(block);
+
+    if (block->prev != nullptr && block->prev->isFree) {
+        mergeWithNext(block->prev);
+    }
+}
+
+void* allocateBuddy(Allocator* allocator, size_t blockSize) {
+    if (allocator == nullptr || blockSize == 0) {
+        return nullptr;
+    }
+
+    auto* state = static_cast<BuddyState*>(allocator->state);
+    const size_t requested = blockSize + sizeof(BuddyBlockHeader);
+    const size_t targetOrder = std::max(state->minOrder, ceilLog2(requested));
+
+    if (targetOrder > state->maxOrder) {
+        return nullptr;
+    }
+
+    size_t currentOrder = targetOrder;
+    while (currentOrder <= state->maxOrder && state->freeLists[currentOrder] == nullptr) {
+        ++currentOrder;
+    }
+
+    if (currentOrder > state->maxOrder) {
+        return nullptr;
+    }
+
+    BuddyBlockHeader* block = state->freeLists[currentOrder];
+    buddyRemoveFreeBlock(state, block);
+
+    while (currentOrder > targetOrder) {
+        --currentOrder;
+        const size_t splitSize = buddyBlockSize(currentOrder);
+
+        auto* rightBuddy = reinterpret_cast<BuddyBlockHeader*>(
+            reinterpret_cast<std::byte*>(block) + splitSize
+        );
+
+        block->order = currentOrder;
+        block->isFree = true;
+        block->next = nullptr;
+        block->prev = nullptr;
+
+        rightBuddy->order = currentOrder;
+        rightBuddy->isFree = true;
+        rightBuddy->next = nullptr;
+        rightBuddy->prev = nullptr;
+
+        buddyAddFreeBlock(state, rightBuddy);
+    }
+
+    block->order = targetOrder;
+    block->isFree = false;
+    block->next = nullptr;
+    block->prev = nullptr;
+
+    return reinterpret_cast<std::byte*>(block) + sizeof(BuddyBlockHeader);
+}
+
+void freeBuddy(Allocator* allocator, void* blockPointer) {
+    if (allocator == nullptr || blockPointer == nullptr) {
+        return;
+    }
+
+    auto* state = static_cast<BuddyState*>(allocator->state);
+    auto* block = reinterpret_cast<BuddyBlockHeader*>(
+        static_cast<std::byte*>(blockPointer) - sizeof(BuddyBlockHeader)
+    );
+
+    if (block->isFree) {
+        return;
+    }
+
+    std::byte* blockAddress = reinterpret_cast<std::byte*>(block);
+    size_t order = block->order;
+
+    while (order < state->maxOrder) {
+        const size_t blockSize = buddyBlockSize(order);
+        const size_t offset = static_cast<size_t>(blockAddress - state->memoryBegin);
+        const size_t buddyOffset = offset ^ blockSize;
+
+        if (buddyOffset + blockSize > state->memorySize) {
+            break;
+        }
+
+        auto* buddy = reinterpret_cast<BuddyBlockHeader*>(state->memoryBegin + buddyOffset);
+        if (!buddy->isFree || buddy->order != order) {
+            break;
+        }
+
+        buddyRemoveFreeBlock(state, buddy);
+
+        if (buddy < block) {
+            block = buddy;
+            blockAddress = reinterpret_cast<std::byte*>(block);
+        }
+
+        ++order;
+        block->order = order;
+        block->isFree = false;
+    }
+
+    buddyAddFreeBlock(state, block);
+}
+
+}
+
+Allocator* createFirstFitAllocator(void* realMemory, size_t memorySize) {
+    const MemoryRange range = normalizeRange(realMemory, memorySize);
+
+    if (range.size < sizeof(FirstFitBlockHeader) + kAlignment) {
+        return nullptr;
+    }
+
+    auto* allocator = new (std::nothrow) Allocator{};
+    auto* state = new (std::nothrow) FirstFitState{};
+
+    if (allocator == nullptr || state == nullptr) {
+        delete allocator;
+        delete state;
+        return nullptr;
+    }
+
+    state->memoryBegin = range.begin;
+    state->memorySize = range.size;
+    state->head = reinterpret_cast<FirstFitBlockHeader*>(range.begin);
+    state->head->size = range.size - sizeof(FirstFitBlockHeader);
+    state->head->isFree = true;
+    state->head->next = nullptr;
+    state->head->prev = nullptr;
+
+    allocator->kind = AllocatorKind::FirstFit;
+    allocator->state = state;
+    return allocator;
+}
+
+Allocator* createPowerOfTwoAllocator(void* realMemory, size_t memorySize) {
+    const MemoryRange range = normalizeRange(realMemory, memorySize);
+    const size_t managedSize = highestPowerOfTwo(range.size);
+    const size_t minimumBlockSize = std::max(alignUp(sizeof(BuddyBlockHeader), kAlignment), size_t(32));
+
+    if (managedSize < minimumBlockSize) {
+        return nullptr;
+    }
+
+    auto* allocator = new (std::nothrow) Allocator{};
+    auto* state = new (std::nothrow) BuddyState{};
+
+    if (allocator == nullptr || state == nullptr) {
+        delete allocator;
+        delete state;
+        return nullptr;
+    }
+
+    state->memoryBegin = range.begin;
+    state->memorySize = managedSize;
+    state->minOrder = ceilLog2(minimumBlockSize);
+    state->maxOrder = floorLog2(managedSize);
+    state->freeLists.assign(state->maxOrder + 1, nullptr);
+
+    auto* initialBlock = reinterpret_cast<BuddyBlockHeader*>(state->memoryBegin);
+    initialBlock->order = state->maxOrder;
+    initialBlock->isFree = true;
+    initialBlock->next = nullptr;
+    initialBlock->prev = nullptr;
+    state->freeLists[state->maxOrder] = initialBlock;
+
+    allocator->kind = AllocatorKind::PowerOfTwo;
+    allocator->state = state;
+    return allocator;
+}
+
+void destroyAllocator(Allocator* allocator) {
+    if (allocator == nullptr) {
+        return;
+    }
+
+    if (allocator->kind == AllocatorKind::FirstFit) {
+        delete static_cast<FirstFitState*>(allocator->state);
+    } else {
+        delete static_cast<BuddyState*>(allocator->state);
+    }
+
+    delete allocator;
+}
+
+void* alloc(Allocator* allocator, size_t blockSize) {
+    if (allocator == nullptr) {
+        return nullptr;
+    }
+
+    if (allocator->kind == AllocatorKind::FirstFit) {
+        return allocateFirstFit(allocator, blockSize);
+    }
+
+    return allocateBuddy(allocator, blockSize);
+}
+
+void freeBlock(Allocator* allocator, void* block) {
+    if (allocator == nullptr || block == nullptr) {
+        return;
+    }
+
+    if (allocator->kind == AllocatorKind::FirstFit) {
+        freeFirstFit(allocator, block);
+        return;
+    }
+
+    freeBuddy(allocator, block);
+}
+
+AllocatorStats getAllocatorStats(const Allocator* allocator) {
+    if (allocator == nullptr) {
+        return {};
+    }
+
+    if (allocator->kind == AllocatorKind::FirstFit) {
+        return collectFirstFitStats(static_cast<const FirstFitState*>(allocator->state));
+    }
+
+    return collectBuddyStats(static_cast<const BuddyState*>(allocator->state));
+}
+
+size_t getAllocatedBlockFootprint(const Allocator* allocator, const void* blockPointer) {
+    if (allocator == nullptr || blockPointer == nullptr) {
+        return 0;
+    }
+
+    if (allocator->kind == AllocatorKind::FirstFit) {
+        const auto* block = reinterpret_cast<const FirstFitBlockHeader*>(
+            static_cast<const std::byte*>(blockPointer) - sizeof(FirstFitBlockHeader)
+        );
+        return sizeof(FirstFitBlockHeader) + block->size;
+    }
+
+    const auto* block = reinterpret_cast<const BuddyBlockHeader*>(
+        static_cast<const std::byte*>(blockPointer) - sizeof(BuddyBlockHeader)
+    );
+    return buddyBlockSize(block->order);
+}
+
+const char* getAllocatorName(const Allocator* allocator) {
+    if (allocator == nullptr) {
+        return "\u043d\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043d\u043e";
+    }
+
+    return allocator->kind == AllocatorKind::FirstFit
+        ? "\u0421\u043f\u0438\u0441\u043e\u043a \u0441\u0432\u043e\u0431\u043e\u0434\u043d\u044b\u0445 \u0431\u043b\u043e\u043a\u043e\u0432"
+        : "\u0411\u043b\u043e\u043a\u0438 2^n";
+}
